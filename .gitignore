@@ -1,2 +1,4 @@
 *.class
+.vscode/
+*.code-workspace
 proj?/nachos/
