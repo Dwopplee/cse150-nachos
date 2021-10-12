@@ -285,6 +285,7 @@ public class KThread {
 
         joinLock.acquire();
 
+		// TODO: need to prevent preemption after checking status and before sleeping
         if (this.status != statusFinished) {
             joinCondition = new Condition(joinLock);
             joinCondition.sleep();
