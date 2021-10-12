@@ -279,14 +279,13 @@ public class KThread {
 
         joinSemaphore = new Semaphore(0);
 
-		boolean intStatus = Machine.interrupt().disable();
+        boolean intStatus = Machine.interrupt().disable();
 
         if (this.status != statusFinished) {
-			joinSemaphore.P();
+            joinSemaphore.P();
         }
 
-		Machine.interrupt().restore(intStatus);
-
+        Machine.interrupt().restore(intStatus);
     }
 
     /**
@@ -473,8 +472,8 @@ public class KThread {
     private Runnable target;
     private TCB tcb;
 
-	private Semaphore joinSemaphore;
-
+    private Semaphore joinSemaphore;
+	
     /**
      * Unique identifer for this thread. Used to deterministically compare threads.
      */
