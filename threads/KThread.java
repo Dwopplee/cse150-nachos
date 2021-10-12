@@ -183,12 +183,8 @@ public class KThread {
 
         Machine.autoGrader().finishingCurrentThread();
 
-        if (currentThread.joinCondition != null) {
-            currentThread.joinLock.acquire();
-            
-            currentThread.joinCondition.wake();
-
-            currentThread.joinLock.release();
+        if (currentThread.joinSemaphore != null) {
+            currentThread.joinSemaphore.V();
         }
 
         Lib.assertTrue(toBeDestroyed == null);
@@ -279,19 +275,18 @@ public class KThread {
         Lib.assertTrue(this != currentThread);
 
         // Make sure we aren't joining something that's already been joined
-        Lib.assertTrue(joinLock == null);
+        Lib.assertTrue(joinSemaphore == null);
 
-        joinLock = new Lock();
+        joinSemaphore = new Semaphore(0);
 
-        joinLock.acquire();
+		boolean intStatus = Machine.interrupt().disable();
 
-		// TODO: need to prevent preemption after checking status and before sleeping
         if (this.status != statusFinished) {
-            joinCondition = new Condition(joinLock);
-            joinCondition.sleep();
+			joinSemaphore.P();
         }
 
-        joinLock.release();
+		Machine.interrupt().restore(intStatus);
+
     }
 
     /**
@@ -478,8 +473,7 @@ public class KThread {
     private Runnable target;
     private TCB tcb;
 
-    private Lock joinLock;
-    private Condition joinCondition;
+	private Semaphore joinSemaphore;
 
     /**
      * Unique identifer for this thread. Used to deterministically compare threads.
