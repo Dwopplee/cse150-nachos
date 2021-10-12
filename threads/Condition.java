@@ -124,8 +124,8 @@ public class Condition {
 
     public static void cvTest5() {
         final Lock lock = new Lock();
-        // final Condition empty = new Condition(lock);
-        final Condition2 empty = new Condition2(lock);
+        final Condition empty = new Condition(lock);
+        // final Condition2 empty = new Condition2(lock);
         final LinkedList<Integer> list = new LinkedList<>();
 
         KThread consumer = new KThread( new Runnable () {
@@ -180,7 +180,8 @@ public class Condition {
 
     private static class InterlockTest {
         private static Lock lock;
-        private static Condition2 cv;
+        // private static Condition2 cv;
+		private static Condition cv;
 
         private static class Interlocker implements Runnable {
             public void run () {
@@ -196,7 +197,7 @@ public class Condition {
 
         public InterlockTest () {
             lock = new Lock();
-            cv = new Condition2(lock);
+            cv = new Condition(lock);
 
             KThread ping = new KThread(new Interlocker());
             ping.setName("ping");
