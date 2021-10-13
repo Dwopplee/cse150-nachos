@@ -274,10 +274,14 @@ public class KThread {
         // Make sure we aren't joining ourselves
         Lib.assertTrue(this != currentThread);
 
+		boolean intStatus = Machine.interrupt().disable();
+
         // Make sure we aren't joining something that's already been joined
         Lib.assertTrue(joinSemaphore == null);
 
         joinSemaphore = new Semaphore(0);
+
+		Machine.interrupt().restore(intStatus);
 
         if (this.status != statusFinished) {
             joinSemaphore.P();
