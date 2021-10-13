@@ -110,7 +110,7 @@ public class Condition {
 			wake();
 	}
 
-	    // Place Condition2 test code inside of the Condition2 class.
+	// Place Condition2 test code inside of the Condition2 class.
 
     // Test programs should have exactly the same behavior with the
     // Condition and Condition2 classes.  You can first try a test with
