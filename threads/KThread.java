@@ -279,13 +279,9 @@ public class KThread {
 
         joinSemaphore = new Semaphore(0);
 
-        boolean intStatus = Machine.interrupt().disable();
-
         if (this.status != statusFinished) {
             joinSemaphore.P();
         }
-
-        Machine.interrupt().restore(intStatus);
     }
 
     /**
