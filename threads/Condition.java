@@ -175,8 +175,8 @@ public class Condition {
     }
 
 	// Example of the "interlock" pattern where two threads strictly
-    // alternate their execution with each other using a condition
-    // variable.  
+	// alternate their execution with each other using a condition
+	// variable.
 
     private static class InterlockTest {
         private static Lock lock;
