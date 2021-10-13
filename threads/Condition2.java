@@ -35,16 +35,16 @@ public class Condition2 {
 	public void sleep() {
 		Lib.assertTrue(conditionLock.isHeldByCurrentThread());
 
-		conditionLock.release();
-
 		boolean intStatus = Machine.interrupt().disable();
+
+		conditionLock.release();
 
 		waitQueue.waitForAccess(KThread.currentThread());
 		KThread.sleep();
 
-		Machine.interrupt().restore(intStatus);
-
 		conditionLock.acquire();
+
+		Machine.interrupt().restore(intStatus);
 	}
 
 	/**
@@ -82,7 +82,7 @@ public class Condition2 {
 		Machine.interrupt().restore(intStatus);
 	}
 
-	    // Place Condition2 test code inside of the Condition2 class.
+	// Place Condition2 test code inside of the Condition2 class.
 
     // Test programs should have exactly the same behavior with the
     // Condition and Condition2 classes.  You can first try a test with
@@ -196,6 +196,7 @@ public class Condition2 {
 
     public static void selfTest() {
         new InterlockTest();
+		cvTest5();
     }
 
 	private Lock conditionLock;
