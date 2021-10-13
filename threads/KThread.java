@@ -226,76 +226,80 @@ public class KThread {
 
 		Lib.assertTrue(currentThread.status == statusRunning);
 
+        boolean intStatus = Machine.interrupt().disable();
+
+        currentThread.ready();
+
+        runNextThread();
+
+        Machine.interrupt().restore(intStatus);
+    }
+
+    /**
+     * Relinquish the CPU, because the current thread has either finished or it is
+     * blocked. This thread must be the current thread.
+     *
+     * <p>
+     * If the current thread is blocked (on a synchronization primitive, i.e. a
+     * <tt>Semaphore</tt>, <tt>Lock</tt>, or <tt>Condition</tt>), eventually some
+     * thread will wake this thread up, putting it back on the ready queue so that
+     * it can be rescheduled. Otherwise, <tt>finish()</tt> should have scheduled
+     * this thread to be destroyed by the next thread to run.
+     */
+    public static void sleep() {
+        Lib.debug(dbgThread, "Sleeping thread: " + currentThread.toString());
+
+        Lib.assertTrue(Machine.interrupt().disabled());
+
+        if (currentThread.status != statusFinished)
+            currentThread.status = statusBlocked;
+
+        runNextThread();
+    }
+
+    /**
+     * Moves this thread to the ready state and adds this to the scheduler's ready
+     * queue.
+     */
+    public void ready() {
+        Lib.debug(dbgThread, "Ready thread: " + toString());
+
+        Lib.assertTrue(Machine.interrupt().disabled());
+        Lib.assertTrue(status != statusReady);
+
+        status = statusReady;
+        if (this != idleThread)
+            readyQueue.waitForAccess(this);
+
+        Machine.autoGrader().readyThread(this);
+    }
+
+    /**
+     * Waits for this thread to finish. If this thread is already finished, return
+     * immediately. This method must only be called once; the second call is not
+     * guaranteed to return. This thread must not be the current thread.
+     */
+    public void join() {
+        Lib.debug(dbgThread, "Joining to thread: " + toString());
+
+        // Make sure we aren't joining ourselves
+        Lib.assertTrue(this != currentThread);
+
 		boolean intStatus = Machine.interrupt().disable();
 
-		currentThread.ready();
+        // Make sure we aren't joining something that's already been joined
+        Lib.assertTrue(joinSemaphore == null);
 
-		runNextThread();
+        joinSemaphore = new Semaphore(0);
 
 		Machine.interrupt().restore(intStatus);
-	}
 
-	/**
-	 * Relinquish the CPU, because the current thread has either finished or it is
-	 * blocked. This thread must be the current thread.
-	 *
-	 * <p>
-	 * If the current thread is blocked (on a synchronization primitive, i.e. a
-	 * <tt>Semaphore</tt>, <tt>Lock</tt>, or <tt>Condition</tt>), eventually some
-	 * thread will wake this thread up, putting it back on the ready queue so that
-	 * it can be rescheduled. Otherwise, <tt>finish()</tt> should have scheduled
-	 * this thread to be destroyed by the next thread to run.
-	 */
-	public static void sleep() {
-		Lib.debug(dbgThread, "Sleeping thread: " + currentThread.toString());
+        if (this.status != statusFinished) {
+            joinSemaphore.P();
+        }
+    }
 
-		Lib.assertTrue(Machine.interrupt().disabled());
-
-		if (currentThread.status != statusFinished)
-			currentThread.status = statusBlocked;
-
-		runNextThread();
-	}
-
-	/**
-	 * Moves this thread to the ready state and adds this to the scheduler's ready
-	 * queue.
-	 */
-	public void ready() {
-		Lib.debug(dbgThread, "Ready thread: " + toString());
-
-		Lib.assertTrue(Machine.interrupt().disabled());
-		Lib.assertTrue(status != statusReady);
-
-		status = statusReady;
-		if (this != idleThread)
-			readyQueue.waitForAccess(this);
-
-		Machine.autoGrader().readyThread(this);
-	}
-
-	/**
-	 * Waits for this thread to finish. If this thread is already finished, return
-	 * immediately. This method must only be called once; the second call is not
-	 * guaranteed to return. This thread must not be the current thread.
-	 */
-	public void join() {
-		Lib.debug(dbgThread, "Joining to thread: " + toString());
-
-		// Make sure we aren't joining ourselves
-		Lib.assertTrue(this != currentThread);
-
-		// Make sure we aren't joining something that's already been joined
-		Lib.assertTrue(joinSemaphore == null);
-
-		joinSemaphore = new Semaphore(0);
-
-		if (this.status != statusFinished) {
-			joinSemaphore.P();
-		}
-	}
-
-	/**
+    /**
      * Create the idle thread. Whenever there are no threads ready to be run,
      * and <tt>runNextThread()</tt> is called, it will run the idle thread. The
      * idle thread must never block, and it will only be allowed to run when
