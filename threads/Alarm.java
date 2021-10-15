@@ -2,7 +2,7 @@ package nachos.threads;
 
 import nachos.machine.*;
 
-import java.util.PriorityQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 
 /**
  * Uses the hardware timer to provide preemption, and to allow threads to sleep
@@ -95,5 +95,5 @@ public class Alarm {
 		public long wakeTime;
 	}
 
-	private PriorityQueue<WakeTimer> waitQueue = new PriorityQueue();
+	private PriorityBlockingQueue<WakeTimer> waitQueue = new PriorityBlockingQueue();
 }
