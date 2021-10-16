@@ -83,6 +83,9 @@ public class Communicator {
 		speaker1.setName("speaker1");
 		speaker1.fork();
 
+		listener1.join();
+		speaker1.join();
+
 	} // selfTest1()
 
 	/**
@@ -97,6 +100,9 @@ public class Communicator {
 		KThread listener1 = new KThread(listenRun);
 		listener1.setName("listener1");
 		listener1.fork();
+
+		listener1.join();
+		speaker1.join();
 
 	} // selfTest2()
 
@@ -120,6 +126,9 @@ public class Communicator {
 		KThread speaker2 = new KThread(speakerRun);
 		speaker2.setName("speaker2");
 		speaker2.fork();
+
+		speaker2.join();
+		listener2.join();
 
 	} // selfTest3()
 
@@ -186,7 +195,7 @@ public class Communicator {
 	}
 
 	// dbgThread = 't' variable needed for debug output
-	private static final char dbgThread = 't';
+	private static final char dbgThread = 'c';
 	// myComm is a shared object that tests Communicator functionality
 	private static Communicator myComm = new Communicator();
 	// myWordCount is used for selfTest5 when spawning listening/speaking threads
