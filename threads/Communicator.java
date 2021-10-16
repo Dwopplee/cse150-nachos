@@ -70,8 +70,7 @@ public class Communicator {
 
 	// Add communicator testing code to the Communicator class
 
-
-/**
+	/**
 	 * Test with 1 listener then 1 speaker.
 	 */
 	public static void selfTest1() {
@@ -114,13 +113,13 @@ public class Communicator {
 		listener1.setName("listener1");
 		listener1.fork();
 
-		KThread speaker2 = new KThread(speakerRun);
-		speaker2.setName("speaker2");
-		speaker2.fork();
-
 		KThread listener2 = new KThread(listenRun);
 		listener2.setName("listener2");
 		listener2.fork();
+
+		KThread speaker2 = new KThread(speakerRun);
+		speaker2.setName("speaker2");
+		speaker2.fork();
 
 	} // selfTest3()
 
@@ -173,22 +172,18 @@ public class Communicator {
 		}
 	}; // Runnable speakerRun
 
-
-
 	// Implement more test methods here ...
 
-
-    // Invoke Communicator.selfTest() from ThreadedKernel.selfTest()
+	// Invoke Communicator.selfTest() from ThreadedKernel.selfTest()
 
 	public static void selfTest() {
-	selfTest1();
-	selfTest2();
-	selfTest3();
+		selfTest1();
+		selfTest2();
+		selfTest3();
 
+		// Invoke your other test methods here ...
 
-	// Invoke your other test methods here ...
-
-}
+	}
 
 	// dbgThread = 't' variable needed for debug output
 	private static final char dbgThread = 't';
@@ -201,7 +196,7 @@ public class Communicator {
 
 	private Condition canListen = new Condition(lock);
 	private Condition canSpeak = new Condition(lock);
-	
+
 	private boolean words = false;
 
 	private int word;
