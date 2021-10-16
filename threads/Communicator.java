@@ -29,7 +29,7 @@ public class Communicator {
 	public void speak(int word) {
 		lock.acquire();
 
-		if (words) {
+		while (words) {
 			canSpeak.sleep();
 		}
 
@@ -53,7 +53,7 @@ public class Communicator {
 	public int listen() {
 		lock.acquire();
 
-		if (!words) {
+		while (!words) {
 			canListen.sleep();
 		}
 
