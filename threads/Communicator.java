@@ -133,6 +133,35 @@ public class Communicator {
 	} // selfTest3()
 
 	/**
+	 * Test with n > 0 speakers and n > 0 listerners
+	 */
+	public static void selfTest4() {
+		int n = 10;
+		KThread speaker = new KThread();
+		KThread listener = new KThread();;
+		for (int i = 0; i < n; i++) {
+			speaker = new KThread(speakerRun);
+			speaker.setName("speaker" + i);
+
+			listener = new KThread(listenRun);
+			listener.setName("listener" + i);
+
+			// I have no idea what this does
+			// I just want some variance in speaker/listener first
+			// I could use rng but it makes debugging harder
+			if (i % 5 % 3 % 2 == 0) {
+				speaker.fork();
+				listener.fork();
+			} else {
+				listener.fork();
+				speaker.fork();
+			}
+		}
+		speaker.join();
+		listener.join();
+	}
+
+	/**
 	 * Function to run inside Runnable object listenRun. Uses the function listen on
 	 * static object myComm inside this class, allowing the threads inside the
 	 * respective selfTests above to call the runnable variables below and test
@@ -140,7 +169,7 @@ public class Communicator {
 	 * README for info on how to run in debug mode.
 	 */
 	static void listenFunction() {
-		Lib.debug(dbgThread, "Thread " + KThread.currentThread().getName() + " is about to listen");
+		// Lib.debug(dbgThread, "Thread " + KThread.currentThread().getName() + " is about to listen");
 
 		Lib.debug(dbgThread, "Thread " + KThread.currentThread().getName() + " got value " + myComm.listen());
 
@@ -154,11 +183,11 @@ public class Communicator {
 	 * README for info on how to run in debug mode.
 	 */
 	static void speakFunction() {
-		Lib.debug(dbgThread, "Thread " + KThread.currentThread().getName() + " is about to speak");
+		// Lib.debug(dbgThread, "Thread " + KThread.currentThread().getName() + " is about to speak");
 
 		myComm.speak(myWordCount++);
 
-		Lib.debug(dbgThread, "Thread " + KThread.currentThread().getName() + " has spoken");
+		// Lib.debug(dbgThread, "Thread " + KThread.currentThread().getName() + " has spoken");
 	} // speakFunction()
 
 	/**
@@ -186,9 +215,10 @@ public class Communicator {
 	// Invoke Communicator.selfTest() from ThreadedKernel.selfTest()
 
 	public static void selfTest() {
-		selfTest1();
-		selfTest2();
-		selfTest3();
+		// selfTest1();
+		// selfTest2();
+		// selfTest3();
+		selfTest4();
 
 		// Invoke your other test methods here ...
 
