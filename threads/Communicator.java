@@ -29,7 +29,7 @@ public class Communicator {
 	public void speak(int word) {
 		lock.acquire();
 
-		if (words) {
+		while (words) {
 			canSpeak.sleep();
 		}
 
@@ -53,7 +53,7 @@ public class Communicator {
 	public int listen() {
 		lock.acquire();
 
-		if (!words) {
+		while (!words) {
 			canListen.sleep();
 		}
 
@@ -136,7 +136,7 @@ public class Communicator {
 	 * Test with n > 0 speakers and n > 0 listerners
 	 */
 	public static void selfTest4() {
-		int n = 10;
+		int n = 25;
 		KThread speaker = new KThread();
 		KThread listener = new KThread();;
 		for (int i = 0; i < n; i++) {
@@ -159,6 +159,9 @@ public class Communicator {
 		}
 		speaker.join();
 		listener.join();
+
+		for (int i = 0; i < n * 2; i++)
+			KThread.yield();
 	}
 
 	/**
@@ -171,7 +174,8 @@ public class Communicator {
 	static void listenFunction() {
 		// Lib.debug(dbgThread, "Thread " + KThread.currentThread().getName() + " is about to listen");
 
-		Lib.debug(dbgThread, "Thread " + KThread.currentThread().getName() + " got value " + myComm.listen());
+		myComm.listen();
+		// Lib.debug(dbgThread, "Thread " + KThread.currentThread().getName() + " got value " + myComm.listen());
 
 	} // listenFunction()
 
@@ -187,7 +191,7 @@ public class Communicator {
 
 		myComm.speak(myWordCount++);
 
-		// Lib.debug(dbgThread, "Thread " + KThread.currentThread().getName() + " has spoken");
+		Lib.debug(dbgThread, "Thread " + KThread.currentThread().getName() + " has spoken");
 	} // speakFunction()
 
 	/**
