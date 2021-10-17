@@ -11,17 +11,28 @@ public class Boat {
 
 	// your code here
 
+	static int num_adult_Oahu;
+	static int num_child_Oahu;
+
+	static int awake_children;
+	static int awake_adults;
+
+	static Condition oahuAdult;
+	static Condition oahuChild;
+	static Condition molokaiChild;
+	static Condition boatChild;
+
 	public static void selfTest() {
 		BoatGrader b = new BoatGrader();
 
-		System.out.println("\n ***Testing Boats with only 2 children***");
-		begin(0, 2, b);
+		// System.out.println("\n ***Testing Boats with only 2 children***");
+		// begin(0, 2, b);
 
 		// System.out.println("\n ***Testing Boats with only 2 children, 1 adult***");
 		// begin(1, 2, b);
 
-		// System.out.println("\n ***Testing Boats with 3 children, 3 adult***");
-		// begin(1, 3, b);
+		System.out.println("\n ***Testing Boats with 3 children, 3 adult***");
+		begin(1, 3, b);
 
 	}
 
@@ -38,17 +49,19 @@ public class Boat {
 
 		// your code here
 
+		oahuAdult = new Condition(lock);
+		oahuChild = new Condition(lock);
+		molokaiChild = new Condition(lock);
+		boatChild = new Condition(lock);
+
+		num_adult_Oahu = adults;
+		awake_adults = num_adult_Oahu;
+
+		num_child_Oahu = children;
+		awake_children = num_child_Oahu;
+
 		// Create threads here. See section 3.4 of the Nachos for Java
 		// Walkthrough linked from the projects page.
-
-		Runnable r = new Runnable() {
-			public void run() {
-				SampleItinerary();
-			}
-		};
-		KThread t = new KThread(r);
-		t.setName("Sample Boat Thread");
-		t.fork();
 
 		// Define runnable object for child thread.
 		Runnable r_child = new Runnable() {
@@ -92,107 +105,146 @@ public class Boat {
 		// adult threads can only operate with the lock atomically
 		lock.acquire();
 
+		while (awake_adults > 1) {
+			awake_adults--;
+			oahuAdult.sleep();
+		}
+
 		// while there are still adults not asleep on Molokai
 		while (not_done) {
 
 			// your code here
 
-		} // after while, boat is on Oahu and children do not need it.
+			// TODO: see if all 'if's are okay
+			while (num_child_Oahu >= 2 || !boat_is_on_oahu) {
+				oahuAdult.sleep();
+				if (boat_is_on_oahu) {
+					oahuChild.wake();
+				}
+			} // after while, boat is on Oahu and children do not need it.
 
-		// row adult self to Molokai and wake one child up so it can bring the
-		// boat back to Oahu for another adult or last children
-		bg.AdultRowToMolokai();
+			// row adult self to Molokai and wake one child up so it can bring the
+			// boat back to Oahu for another adult or last children
+			bg.AdultRowToMolokai();
 
-		// your code here
+			// your code here
 
-		boat_is_on_oahu = false;
+			num_adult_Oahu--;
 
-		// your code here
+			boat_is_on_oahu = false;
 
-	} // while not done and adult still need to get to Molokai
+			molokaiChild.wake();
+			oahuChild.sleep();
+			lock.release();
+
+			KThread.finish();
+
+			// your code here
+
+		} // while not done and adult still need to get to Molokai
+	}
 
 	static void ChildItinerary() {
 		// child threads can only operate with the lock atomically
 		lock.acquire();
 
+		if (awake_children > 1) {
+			awake_children--;
+			oahuChild.sleep();
+		}
+
 		// while there are still adults and children not on Molokai
 		while (not_done) {
 
 			// if the boat is not on Oahu
+			// this child is woken up on Molokai by an adult to ferry boat
+			// for other adults on Oahu or last children on Oahu
 			while (!boat_is_on_oahu) {
 
 				// your code here
-
-			}
-
-			// if this child will be the first into the boat, it will be a
-			// passenger and wait for a rower
-			if (children_on_boat == 0) {
-
-				// increment boat counter and wake sleeping children that could
-				// ferry us, and sleep on Molokai
 				children_on_boat++;
 
-				// your code here
-
-				// this child is woken up on Molokai by an adult to ferry boat
-				// for other adults on Oahu or last children on Oahu
 				bg.ChildRowToOahu();
+
+				num_child_Oahu++;
 				boat_is_on_oahu = true;
 
-				// your code here
-
-				children_on_boat = 0;
-
-				// your code here
+				children_on_boat--;
 
 			}
 
-			// else this child should be a rower if there is a child in the boat
-			else if (children_on_boat == 1) {
+			while (num_child_Oahu >= 2 && boat_is_on_oahu) {
+				// if this child will be the first into the boat, it will be a
+				// passenger and wait for a rower
+				if (children_on_boat == 0) {
+					// we go get another child to row the boat
+					oahuChild.wake();
 
-				// two children always bring the boat back from Oahu and check
-				// if they are done before returning to Oahu for an adult
+					// we get in the boat
+					children_on_boat++;
+
+					// sleep until rower wakes us
+					boatChild.sleep();
+
+					// on the island, go to sleep
+					molokaiChild.sleep();
+
+				} else if (children_on_boat == 1) {
+					// two children always bring the boat back from Oahu and check
+					// if they are done before returning to Oahu for an adult
+					children_on_boat++;
+					bg.ChildRowToMolokai();
+					bg.ChildRideToMolokai();
+					boat_is_on_oahu = false;
+
+					num_child_Oahu -= 2;
+
+					// throw the passenger out of the boat
+					children_on_boat--;
+
+					// that should wake them up
+					boatChild.wake();
+
+					if (num_child_Oahu + num_adult_Oahu == 0) {
+						// set terminal bool to false to end all loops and return
+						not_done = false;
+						return;
+					} // boat terminates after this if statement is executed
+					// else we are not done so we need to send one back to Oahu
+					else {
+						bg.ChildRowToOahu();
+
+						num_child_Oahu++;
+
+						children_on_boat = 0;
+						boat_is_on_oahu = true;
+
+						// your code here
+
+					}
+				}
+			} // while (num_child_Oahu >= 2)
+			
+			while (num_adult_Oahu > 0  && boat_is_on_oahu) {
+				oahuAdult.wake();
+				oahuChild.sleep();
+			}
+
+			while (num_child_Oahu == 1  && boat_is_on_oahu) {
 				children_on_boat++;
-				bg.ChildRowToMolokai();
-				bg.ChildRideToMolokai();
-				boat_is_on_oahu = false;
 
-				// your code here
+				bg.ChildRowToOahu();
 
-				// check if we are all done
-				// if (checking condition) {
+				num_child_Oahu--;
+				children_on_boat--;
 
-				// set terminal bool to false to end all loops and return
 				not_done = false;
 				return;
-			} // boat terminates after this if statement is executed
-
-			// else we are not done so we need to send one back to Oahu
-			else {
-				bg.ChildRowToOahu();
-
-				// your code here
-
-				children_on_boat = 0;
-				boat_is_on_oahu = true;
-
-				// your code here
-
 			}
-		}
-	}
 
-	static void SampleItinerary() {
-		// Please note that this isn't a valid solution (you can't fit
-		// all of them on the boat). Please also note that you may not
-		// have a single thread calculate a solution and then just play
-		// it back at the autograder -- you will be caught.
-		System.out.println("\n ***Everyone piles on the boat and goes to Molokai***");
-		bg.AdultRowToMolokai();
-		bg.ChildRideToMolokai();
-		bg.AdultRideToMolokai();
-		bg.ChildRideToMolokai();
-	}
+		} // while (not_done)
+
+		lock.release();
+	} // ChildItinerary()
 
 }
