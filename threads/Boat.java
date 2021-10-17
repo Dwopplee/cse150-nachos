@@ -105,10 +105,7 @@ public class Boat {
 		// adult threads can only operate with the lock atomically
 		lock.acquire();
 
-		while (awake_adults > 1) {
-			awake_adults--;
-			oahuAdult.sleep();
-		}
+		oahuAdult.sleep();
 
 		// while there are still adults not asleep on Molokai
 		while (not_done) {
