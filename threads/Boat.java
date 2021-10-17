@@ -230,7 +230,7 @@ public class Boat {
 			while (num_child_Oahu == 1  && boat_is_on_oahu) {
 				children_on_boat++;
 
-				bg.ChildRowToOahu();
+				bg.ChildRowToMolokai();
 
 				num_child_Oahu--;
 				children_on_boat--;
