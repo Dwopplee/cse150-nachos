@@ -95,153 +95,139 @@ public class Boat {
 	}
 
 	static void AdultItinerary() {
-
-		/*
-		 * This is where you should put your solutions. Make calls to the BoatGrader to
-		 * show that it is synchronized. For example: bg.AdultRowToMolokai(); indicates
-		 * that an adult has rowed the boat across to Molokai
-		 */
-
 		// adult threads can only operate with the lock atomically
 		lock.acquire();
 
+		// sleep until a child wakes us
+		// make sure there is at least one child run the simulation
+		awake_adults--;
+		if (awake_adults + awake_children == 0) {
+			// if this condition is true, we can start the simulation
+			// we no longer need to track number of awake threads
+			oahuChild.wake();
+		}
 		oahuAdult.sleep();
 
-		// while there are still adults not asleep on Molokai
-		while (not_done) {
+		// row adult self to Molokai and wake one child up so it can bring the
+		// boat back to Oahu for another adult or last children
+		bg.AdultRowToMolokai();
+		num_adult_Oahu--;
+		boat_is_on_oahu = false;
 
-			// your code here
+		// wake a child to return the boat
+		molokaiChild.wake();
 
-			// TODO: see if all 'if's are okay
-			while (num_child_Oahu >= 2 || !boat_is_on_oahu) {
-				oahuAdult.sleep();
-				if (boat_is_on_oahu) {
-					oahuChild.wake();
-				}
-			} // after while, boat is on Oahu and children do not need it.
-
-			// row adult self to Molokai and wake one child up so it can bring the
-			// boat back to Oahu for another adult or last children
-			bg.AdultRowToMolokai();
-
-			// your code here
-
-			num_adult_Oahu--;
-
-			boat_is_on_oahu = false;
-
-			molokaiChild.wake();
-			oahuChild.sleep();
-			lock.release();
-
-			KThread.finish();
-
-			// your code here
-
-		} // while not done and adult still need to get to Molokai
+		// once an adult is on Molokai, we no longer need to track them
+		lock.release();
+		KThread.finish();
 	}
 
 	static void ChildItinerary() {
 		// child threads can only operate with the lock atomically
 		lock.acquire();
 
-		if (awake_children > 1) {
+		// make sure everyone else is asleep before we start
+		// only runs once per thread, at start of simulation
+		// after this, we no longer need to track number of awake threads
+		if (awake_children > 1 || awake_adults > 0) {
 			awake_children--;
 			oahuChild.sleep();
 		}
 
-		// while there are still adults and children not on Molokai
+		// while there are still adults and children on Oahu
 		while (not_done) {
 
-			// if the boat is not on Oahu
-			// this child is woken up on Molokai by an adult to ferry boat
-			// for other adults on Oahu or last children on Oahu
+			// if the boat is not on Oahu and we aren't done
+			// then we need to return it
 			while (!boat_is_on_oahu) {
-
-				// your code here
 				children_on_boat++;
 
 				bg.ChildRowToOahu();
-
-				num_child_Oahu++;
 				boat_is_on_oahu = true;
+				num_child_Oahu++;
 
 				children_on_boat--;
+			} // end while (!boat_is_on_oahu)
 
-			}
-
+			// if there is another child on Oahu
+			// then we should go with them to Molokai
+			// ignore if boat is on Molokai, since that means we are as well
 			while (num_child_Oahu >= 2 && boat_is_on_oahu) {
-				// if this child will be the first into the boat, it will be a
-				// passenger and wait for a rower
+
+				// if we are the first on the boat, get a rower to take us
 				if (children_on_boat == 0) {
-					// we go get another child to row the boat
+					// wake the rower
 					oahuChild.wake();
 
-					// we get in the boat
 					children_on_boat++;
 
-					// sleep until rower wakes us
+					// sleep until the rower wakes us
 					boatChild.sleep();
 
-					// on the island, go to sleep
+					// rower will wake us on the island
+					// we can go back to sleep
 					molokaiChild.sleep();
 
-				} else if (children_on_boat == 1) {
-					// two children always bring the boat back from Oahu and check
-					// if they are done before returning to Oahu for an adult
+				}
+				// if we are second on the boat, we are the rower
+				else if (children_on_boat == 1) {
 					children_on_boat++;
+
 					bg.ChildRowToMolokai();
 					bg.ChildRideToMolokai();
 					boat_is_on_oahu = false;
-
 					num_child_Oahu -= 2;
 
 					// throw the passenger out of the boat
-					children_on_boat--;
-
 					// that should wake them up
+					children_on_boat--;
 					boatChild.wake();
 
+					// if there is no one on Oahu, we're done
 					if (num_child_Oahu + num_adult_Oahu == 0) {
-						// set terminal bool to false to end all loops and return
 						not_done = false;
 						return;
-					} // boat terminates after this if statement is executed
-					// else we are not done so we need to send one back to Oahu
+					}
+					// otherwise, we need to return the boat to Oahu
 					else {
 						bg.ChildRowToOahu();
-
+						boat_is_on_oahu = true;
 						num_child_Oahu++;
 
-						children_on_boat = 0;
-						boat_is_on_oahu = true;
-
-						// your code here
-
+						children_on_boat--;
 					}
 				}
-			} // while (num_child_Oahu >= 2)
-			
-			while (num_adult_Oahu > 0  && boat_is_on_oahu) {
+			} // end while (num_child_Oahu >= 2 && boat_is_on_oahu)
+
+			// if we're on Oahu and there is an adult to wake
+			// then we should wake one, then go to sleep
+			// this condition will never be reached if there is another child
+			// ignore if boat is on Molokai, since that means we are as well
+			while (num_adult_Oahu > 0 && boat_is_on_oahu) {
 				oahuAdult.wake();
 				oahuChild.sleep();
-			}
+			} // end while (num_adult_Oahu > 0 && boat_is_on_oahu)
 
-			while (num_child_Oahu == 1  && boat_is_on_oahu) {
+			// if we're the only one on Oahu
+			// then we should row to Molokai, and we're done
+			// this condition will never be reached if anyone else is on Oahu
+			// ignore if boat is on Molokai, since that means we are as well
+			while (num_child_Oahu == 1 && boat_is_on_oahu) {
 				children_on_boat++;
 
 				bg.ChildRowToMolokai();
-
+				boat_is_on_oahu = true;
 				num_child_Oahu--;
+
 				children_on_boat--;
 
 				not_done = false;
 				return;
 			}
 
-		} // while (not_done)
+		} // end while (not_done)
 
 		lock.release();
-	} // ChildItinerary()
+	} // end ChildItinerary()
 
 }
