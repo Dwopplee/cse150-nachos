@@ -35,15 +35,22 @@ public class Condition2 {
 	public void sleep() {
 		Lib.assertTrue(conditionLock.isHeldByCurrentThread());
 
+		// Ensure atomicity before we release the lock
 		boolean intStatus = Machine.interrupt().disable();
 
 		conditionLock.release();
 
+		// When we sleep, the next thread will reenable interrupts.
+		// Therefore, we can be sure the lock is released and interrupts are
+		// enabled even though we are asleep.
 		waitQueue.waitForAccess(KThread.currentThread());
 		KThread.sleep();
 
+		// When we wake, we re-acquire the lock
 		conditionLock.acquire();
 
+		// Enable interrupts again
+		// The previous thread should have disabled them to sleep/yield/terminate.
 		Machine.interrupt().restore(intStatus);
 	}
 
@@ -54,8 +61,10 @@ public class Condition2 {
 	public void wake() {
 		Lib.assertTrue(conditionLock.isHeldByCurrentThread());
 
+		// Ensure atomicity
 		boolean intStatus = Machine.interrupt().disable();
 
+		// Simply wake the next thread in the queue, if it exists
 		KThread thread = waitQueue.nextThread();
 		if (thread != null) {
 			thread.ready();
@@ -71,8 +80,10 @@ public class Condition2 {
 	public void wakeAll() {
 		Lib.assertTrue(conditionLock.isHeldByCurrentThread());
 
+		// Ensure atomicity
 		boolean intStatus = Machine.interrupt().disable();
 
+		// Wake every thread in the queue until it is empty
 		KThread thread = waitQueue.nextThread();
 		while (thread != null) {
 			thread.ready();
