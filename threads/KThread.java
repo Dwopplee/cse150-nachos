@@ -183,6 +183,9 @@ public class KThread {
 
         Machine.autoGrader().finishingCurrentThread();
 
+		// joinSemaphore should only exist if a thread tries to join
+		// in this case, we should iterate it. this ensures the thread will either
+		// wake or not sleep upon checking the state of the semaphore
         if (currentThread.joinSemaphore != null) {
             currentThread.joinSemaphore.V();
         }
@@ -277,13 +280,17 @@ public class KThread {
 		boolean intStatus = Machine.interrupt().disable();
 
         // Make sure we aren't joining something that's already been joined
+		// This is a critical section so that two threads can't both pass this
+		// assert before we create the semaphore in the next line.
         Lib.assertTrue(joinSemaphore == null);
-
         joinSemaphore = new Semaphore(0);
 
 		Machine.interrupt().restore(intStatus);
 
+		// Make sure the thread isn't already finished
         if (this.status != statusFinished) {
+			// If we satisfy all the conditions, actually join the thread
+			// Sleep until it terminates
             joinSemaphore.P();
         }
     }
