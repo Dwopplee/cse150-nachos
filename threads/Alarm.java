@@ -2,7 +2,7 @@ package nachos.threads;
 
 import nachos.machine.*;
 
-import java.util.concurrent.PriorityBlockingQueue;
+import java.util.TreeSet;
 
 /**
  * Uses the hardware timer to provide preemption, and to allow threads to sleep
@@ -33,8 +33,11 @@ public class Alarm {
 	public void timerInterrupt() {
 		// Front of the queue will always be the thread with the smallest wait time
 		// If we're past the wake time, wake the thread, then check the next one
-		while (waitQueue.peek() != null && waitQueue.peek().wakeTime < Machine.timer().getTime())
-			waitQueue.poll().wake.V();
+		// We don't lock before accessing the queue because this is an interrupt, not a
+		// thread
+		while (waitQueue.size() > 0 && waitQueue.first().wakeTime < Machine.timer().getTime())
+			waitQueue.pollFirst().wake.V();
+
 		KThread.yield();
 	}
 
@@ -56,12 +59,17 @@ public class Alarm {
 
 		// If the time has already passed we can just return
 		if (wakeTime > Machine.timer().getTime()) {
+			// Ensure only one thread may access the queue at once
+			lock.acquire();
+
 			// Otherwise, package the information into a structure,
 			WakeTimer wakeTimer = new WakeTimer(wakeTime);
 			// put it in the queue,
 			waitQueue.add(wakeTimer);
 			// and go to sleep.
 			wakeTimer.wake.P();
+
+			lock.release();
 		}
 
 	}
@@ -69,7 +77,7 @@ public class Alarm {
 	// Add Alarm testing code to the Alarm class
 
 	public static void alarmTest1() {
-		int durations[] = { 1000, 10 * 1000, 100 * 1000 };
+		int durations[] = { 1000, 1001, 1002, 10 * 1000, 10 * 1001, 10 * 1002, 100 * 1000 };
 		long t0, t1;
 
 		for (int d : durations) {
@@ -92,10 +100,10 @@ public class Alarm {
 	/**
 	 * Simple data structure to track threads and their wake times
 	 * 
-	 * Define the wake time upon initialization, and the structure will automatically
-	 * create a semaphore to sleep and wake the thread with. Needs to be comparable
-	 * for compatibility with Java's priority queue. Comparison simply compares the values
-	 * of wakeTime.
+	 * Define the wake time upon initialization, and the structure will
+	 * automatically create a semaphore to sleep and wake the thread with. Needs to
+	 * be comparable for compatibility with Java's priority queue. Comparison simply
+	 * compares the values of wakeTime.
 	 */
 	private class WakeTimer implements Comparable<WakeTimer> {
 		public WakeTimer(long wakeTime) {
@@ -111,6 +119,9 @@ public class Alarm {
 		public long wakeTime;
 	}
 
-	// Thread-safe queue to track the threads we need to wake.
-	private PriorityBlockingQueue<WakeTimer> waitQueue = new PriorityBlockingQueue();
+	// Lock to ensure mutual exclusion when accessing the queue
+	private Lock lock = new Lock();
+
+	// Efficient queue to track the threads we need to wake.
+	private TreeSet<WakeTimer> waitQueue = new TreeSet();
 }
