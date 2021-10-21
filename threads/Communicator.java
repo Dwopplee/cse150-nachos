@@ -33,6 +33,8 @@ public class Communicator {
 		// Prevent this speaker from overwriting a previous speaker's word
 		while (words) {
 			canSpeak.sleep();
+			
+			canListen.wake(); // adding the listener wake in here.
 		}
 
 		// Once the buffer is empty, add our word to it, then flag it as full
@@ -58,11 +60,13 @@ public class Communicator {
 	 */
 	public int listen() {
 		// Ensure atomicity
-		lock.acquire();
+		 lock.acquire(); 
 
 		// Prevent the listener from accessing an empty buffer
 		while (!words) {
 			canListen.sleep();
+
+			canSpeak.wake(); // adding the speaker wake in here.
 		}
 
 		// Once the buffer is full, take the word and flag it as empty
@@ -135,7 +139,89 @@ public class Communicator {
 		speaker2.fork();
 
 	} // selfTest3()
+    //Test with 3 speakers and 1 listener
+	public static void selftest4() {
 
+		KThread speaker1 = new KThread(speakerRun);
+		speaker1.setName("speaker1");
+		speaker1.fork();
+
+		KThread speaker2 = new KThread(speakerRun);
+		speaker2.setName("speaker2");
+		speaker2.fork();
+
+		KThread speaker3 = new KThread(speakerRun);
+		speaker3.setName("speaker3");
+		speaker3.fork();
+
+		KThread listener1 = new KThread(listenRun);
+		listener1.setName("listener1");
+		listener1.fork();
+
+	} 
+    //Test with 1 speaker and 3 listeners
+	public static void selftest5() {
+
+		KThread speaker1 = new KThread(speakerRun);
+		speaker1.setName("speaker1");
+		speaker1.fork();
+
+		KThread listener1 = new KThread(listenRun);
+		listener1.setName("listener1");
+		listener1.fork();
+
+		KThread listener2 = new KThread(listenRun);
+		listener2.setName("listener2");
+		listener2.fork();
+
+		KThread listener3 = new KThread(listenRun);
+		listener3.setName("listener3");
+		listener3.fork();
+
+	}
+	//Test with 5 speakers and 5 listeners
+	public static void selftest6() {
+
+		KThread speaker1 = new KThread(speakerRun);
+		speaker1.setName("speaker1");
+		speaker1.fork();
+
+		KThread speaker2 = new KThread(speakerRun);
+		speaker2.setName("speaker2");
+		speaker2.fork();
+
+		KThread speaker3 = new KThread(speakerRun);
+		speaker3.setName("speaker3");
+		speaker3.fork();
+
+		KThread speaker4 = new KThread(speakerRun);
+		speaker4.setName("speaker4");
+		speaker4.fork();
+
+		KThread speaker5 = new KThread(speakerRun);
+		speaker5.setName("speaker5");
+		speaker5.fork();
+
+		KThread listener1 = new KThread(listenRun);
+		listener1.setName("listener1");
+		listener1.fork();
+
+		KThread listener2 = new KThread(listenRun);
+		listener2.setName("listener2");
+		listener2.fork();
+
+		KThread listener3 = new KThread(listenRun);
+		listener3.setName("listener3");
+		listener3.fork();
+        
+		KThread listener4 = new KThread(listenRun);
+		listener4.setName("listener4");
+		listener4.fork();
+
+		KThread listener5 = new KThread(listenRun);
+		listener5.setName("listener5");
+		listener5.fork();
+	} 
 	/**
 	 * Function to run inside Runnable object listenRun. Uses the function listen on
 	 * static object myComm inside this class, allowing the threads inside the
@@ -194,6 +280,9 @@ public class Communicator {
 		selfTest2();
 		selfTest3();
 
+		selftest4();
+        selftest5();
+		selftest6();
 		// Invoke your other test methods here ...
 
 	}
