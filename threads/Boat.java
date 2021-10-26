@@ -12,8 +12,8 @@ public class Boat {
 	
 	// Track quantities of people in places
 	static int num_child_boat;
-	static int num_adult_Oahu;
-	static int num_child_Oahu;
+	static int num_adult_oahu;
+	static int num_child_oahu;
 
 	// Track quantities of people not sleeping
 	static int num_child_awake;
@@ -53,12 +53,12 @@ public class Boat {
 
 		// All people start on Oahu
 		num_child_boat = 0;
-		num_adult_Oahu = adults;
-		num_child_Oahu = children;
+		num_adult_oahu = adults;
+		num_child_oahu = children;
 
 		// All threads start awake
-		num_adult_awake = num_adult_Oahu;
-		num_child_awake = num_child_Oahu;
+		num_adult_awake = num_adult_oahu;
+		num_child_awake = num_child_oahu;
 
 		// All threads should sleep on the class lock
 		oahuAdult = new Condition(lock);
@@ -114,7 +114,7 @@ public class Boat {
 		// row adult self to Molokai and wake one child up so it can bring the
 		// boat back to Oahu for another adult or last children
 		bg.AdultRowToMolokai();
-		num_adult_Oahu--;
+		num_adult_oahu--;
 		boat_is_on_oahu = false;
 
 		// wake a child to return the boat
@@ -147,7 +147,7 @@ public class Boat {
 
 				bg.ChildRowToOahu();
 				boat_is_on_oahu = true;
-				num_child_Oahu++;
+				num_child_oahu++;
 
 				num_child_boat--;
 			} // end while (!boat_is_on_oahu)
@@ -155,7 +155,7 @@ public class Boat {
 			// if there is another child on Oahu
 			// then we should go with them to Molokai
 			// ignore if boat is on Molokai, since that means we are as well
-			while (num_child_Oahu >= 2 && boat_is_on_oahu) {
+			while (num_child_oahu >= 2 && boat_is_on_oahu) {
 
 				// if we are the first on the boat, get a rower to take us
 				if (num_child_boat == 0) {
@@ -179,7 +179,7 @@ public class Boat {
 					bg.ChildRowToMolokai();
 					bg.ChildRideToMolokai();
 					boat_is_on_oahu = false;
-					num_child_Oahu -= 2;
+					num_child_oahu -= 2;
 
 					// throw the passenger out of the boat
 					// that should wake them up
@@ -187,7 +187,7 @@ public class Boat {
 					boatChild.wake();
 
 					// if there is no one on Oahu, we're done
-					if (num_child_Oahu + num_adult_Oahu == 0) {
+					if (num_child_oahu + num_adult_oahu == 0) {
 						not_done = false;
 						return;
 					}
@@ -195,32 +195,32 @@ public class Boat {
 					else {
 						bg.ChildRowToOahu();
 						boat_is_on_oahu = true;
-						num_child_Oahu++;
+						num_child_oahu++;
 
 						num_child_boat--;
 					}
 				}
-			} // end while (num_child_Oahu >= 2 && boat_is_on_oahu)
+			} // end while (num_child_oahu >= 2 && boat_is_on_oahu)
 
 			// if we're on Oahu and there is an adult to wake
 			// then we should wake one, then go to sleep
 			// this condition will never be reached if there is another child
 			// ignore if boat is on Molokai, since that means we are as well
-			while (num_adult_Oahu > 0 && boat_is_on_oahu) {
+			while (num_adult_oahu > 0 && boat_is_on_oahu) {
 				oahuAdult.wake();
 				oahuChild.sleep();
-			} // end while (num_adult_Oahu > 0 && boat_is_on_oahu)
+			} // end while (num_adult_oahu > 0 && boat_is_on_oahu)
 
 			// if we're the only one on Oahu
 			// then we should row to Molokai, and we're done
 			// this condition will never be reached if anyone else is on Oahu
 			// ignore if boat is on Molokai, since that means we are as well
-			while (num_child_Oahu == 1 && boat_is_on_oahu) {
+			while (num_child_oahu == 1 && boat_is_on_oahu) {
 				num_child_boat++;
 
 				bg.ChildRowToMolokai();
 				boat_is_on_oahu = true;
-				num_child_Oahu--;
+				num_child_oahu--;
 
 				num_child_boat--;
 
