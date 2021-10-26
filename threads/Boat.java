@@ -20,10 +20,10 @@ public class Boat {
 	static int num_adult_awake;
 
 	// Queues for people sleeping in a given location
-	static Condition oahuAdult;
-	static Condition oahuChild;
-	static Condition molokaiChild;
-	static Condition boatChild;
+	static Condition oahu_adult;
+	static Condition oahu_child;
+	static Condition molokai_child;
+	static Condition boat_child;
 
 	public static void selfTest() {
 		BoatGrader b = new BoatGrader();
@@ -61,10 +61,10 @@ public class Boat {
 		num_child_awake = num_child_oahu;
 
 		// All threads should sleep on the class lock
-		oahuAdult = new Condition(lock);
-		oahuChild = new Condition(lock);
-		molokaiChild = new Condition(lock);
-		boatChild = new Condition(lock);
+		oahu_adult = new Condition(lock);
+		oahu_child = new Condition(lock);
+		molokai_child = new Condition(lock);
+		boat_child = new Condition(lock);
 
 		// Define runnable object for child thread.
 		Runnable r_child = new Runnable() {
@@ -107,9 +107,9 @@ public class Boat {
 		if (num_adult_awake + num_child_awake == 0) {
 			// if this condition is true, we can start the simulation
 			// we no longer need to track number of awake threads
-			oahuChild.wake();
+			oahu_child.wake();
 		}
-		oahuAdult.sleep();
+		oahu_adult.sleep();
 
 		// row adult self to Molokai and wake one child up so it can bring the
 		// boat back to Oahu for another adult or last children
@@ -118,7 +118,7 @@ public class Boat {
 		boat_is_on_oahu = false;
 
 		// wake a child to return the boat
-		molokaiChild.wake();
+		molokai_child.wake();
 
 		// once an adult is on Molokai, we no longer need to track them
 		lock.release();
@@ -134,7 +134,7 @@ public class Boat {
 		// after this, we no longer need to track number of awake threads
 		if (num_child_awake > 1 || num_adult_awake > 0) {
 			num_child_awake--;
-			oahuChild.sleep();
+			oahu_child.sleep();
 		}
 
 		// while there are still adults and children on Oahu
@@ -160,16 +160,16 @@ public class Boat {
 				// if we are the first on the boat, get a rower to take us
 				if (num_child_boat == 0) {
 					// wake the rower
-					oahuChild.wake();
+					oahu_child.wake();
 
 					num_child_boat++;
 
 					// sleep until the rower wakes us
-					boatChild.sleep();
+					boat_child.sleep();
 
 					// rower will wake us on the island
 					// we can go back to sleep
-					molokaiChild.sleep();
+					molokai_child.sleep();
 
 				}
 				// if we are second on the boat, we are the rower
@@ -184,7 +184,7 @@ public class Boat {
 					// throw the passenger out of the boat
 					// that should wake them up
 					num_child_boat--;
-					boatChild.wake();
+					boat_child.wake();
 
 					// if there is no one on Oahu, we're done
 					if (num_child_oahu + num_adult_oahu == 0) {
@@ -207,8 +207,8 @@ public class Boat {
 			// this condition will never be reached if there is another child
 			// ignore if boat is on Molokai, since that means we are as well
 			while (num_adult_oahu > 0 && boat_is_on_oahu) {
-				oahuAdult.wake();
-				oahuChild.sleep();
+				oahu_adult.wake();
+				oahu_child.sleep();
 			} // end while (num_adult_oahu > 0 && boat_is_on_oahu)
 
 			// if we're the only one on Oahu
