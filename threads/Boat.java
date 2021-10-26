@@ -5,18 +5,21 @@ import nachos.ag.BoatGrader;
 public class Boat {
 	static BoatGrader bg;
 	static boolean not_done;
-	static boolean boat_is_on_oahu;
 	static Lock lock;
-	static int children_on_boat;
 
-	// your code here
-
+	// Track whether the boat is on Oahu
+	static boolean boat_is_on_oahu;
+	
+	// Track quantities of people in places
+	static int num_child_boat;
 	static int num_adult_Oahu;
 	static int num_child_Oahu;
 
-	static int awake_children;
-	static int awake_adults;
+	// Track quantities of people not sleeping
+	static int num_child_awake;
+	static int num_adult_awake;
 
+	// Queues for people sleeping in a given location
 	static Condition oahuAdult;
 	static Condition oahuChild;
 	static Condition molokaiChild;
@@ -41,27 +44,27 @@ public class Boat {
 		// variable to be accessible by children.
 		bg = b;
 
-		// Instantiate global variables here
+		// Instantiate global variables
 		not_done = true;
-		boat_is_on_oahu = true;
 		lock = new Lock();
-		children_on_boat = 0;
 
-		// your code here
+		// Boat starts on Oahu
+		boat_is_on_oahu = true;
 
+		// All people start on Oahu
+		num_child_boat = 0;
+		num_adult_Oahu = adults;
+		num_child_Oahu = children;
+
+		// All threads start awake
+		num_adult_awake = num_adult_Oahu;
+		num_child_awake = num_child_Oahu;
+
+		// All threads should sleep on the class lock
 		oahuAdult = new Condition(lock);
 		oahuChild = new Condition(lock);
 		molokaiChild = new Condition(lock);
 		boatChild = new Condition(lock);
-
-		num_adult_Oahu = adults;
-		awake_adults = num_adult_Oahu;
-
-		num_child_Oahu = children;
-		awake_children = num_child_Oahu;
-
-		// Create threads here. See section 3.4 of the Nachos for Java
-		// Walkthrough linked from the projects page.
 
 		// Define runnable object for child thread.
 		Runnable r_child = new Runnable() {
@@ -80,17 +83,17 @@ public class Boat {
 		// Spawn all adult threads.
 		for (int i = 0; i < adults; i++) {
 			new KThread(r_adult).setName("Adult " + Integer.toString(i + 1)).fork();
-		} // after this for loop, all adult threads are spawned and sleeping
+		}
 
 		// Spawn all child threads.
 		for (int i = 0; i < children; i++) {
 			new KThread(r_child).setName("Child " + Integer.toString(i + 1)).fork();
-		} // after this for loop, all child threads are spawned and start running
+		}
 
-		// hold main thread while solutions calls are made to the BoatGrader
-		while (not_done)
+		// Hold main thread until everyone is on Molokai
+		while (not_done) {
 			KThread.yield();
-		// while loop ends when last children and all adults are on Molokai
+		}
 
 	}
 
@@ -100,8 +103,8 @@ public class Boat {
 
 		// sleep until a child wakes us
 		// make sure there is at least one child run the simulation
-		awake_adults--;
-		if (awake_adults + awake_children == 0) {
+		num_adult_awake--;
+		if (num_adult_awake + num_child_awake == 0) {
 			// if this condition is true, we can start the simulation
 			// we no longer need to track number of awake threads
 			oahuChild.wake();
@@ -129,8 +132,8 @@ public class Boat {
 		// make sure everyone else is asleep before we start
 		// only runs once per thread, at start of simulation
 		// after this, we no longer need to track number of awake threads
-		if (awake_children > 1 || awake_adults > 0) {
-			awake_children--;
+		if (num_child_awake > 1 || num_adult_awake > 0) {
+			num_child_awake--;
 			oahuChild.sleep();
 		}
 
@@ -140,13 +143,13 @@ public class Boat {
 			// if the boat is not on Oahu and we aren't done
 			// then we need to return it
 			while (!boat_is_on_oahu) {
-				children_on_boat++;
+				num_child_boat++;
 
 				bg.ChildRowToOahu();
 				boat_is_on_oahu = true;
 				num_child_Oahu++;
 
-				children_on_boat--;
+				num_child_boat--;
 			} // end while (!boat_is_on_oahu)
 
 			// if there is another child on Oahu
@@ -155,11 +158,11 @@ public class Boat {
 			while (num_child_Oahu >= 2 && boat_is_on_oahu) {
 
 				// if we are the first on the boat, get a rower to take us
-				if (children_on_boat == 0) {
+				if (num_child_boat == 0) {
 					// wake the rower
 					oahuChild.wake();
 
-					children_on_boat++;
+					num_child_boat++;
 
 					// sleep until the rower wakes us
 					boatChild.sleep();
@@ -170,8 +173,8 @@ public class Boat {
 
 				}
 				// if we are second on the boat, we are the rower
-				else if (children_on_boat == 1) {
-					children_on_boat++;
+				else if (num_child_boat == 1) {
+					num_child_boat++;
 
 					bg.ChildRowToMolokai();
 					bg.ChildRideToMolokai();
@@ -180,7 +183,7 @@ public class Boat {
 
 					// throw the passenger out of the boat
 					// that should wake them up
-					children_on_boat--;
+					num_child_boat--;
 					boatChild.wake();
 
 					// if there is no one on Oahu, we're done
@@ -194,7 +197,7 @@ public class Boat {
 						boat_is_on_oahu = true;
 						num_child_Oahu++;
 
-						children_on_boat--;
+						num_child_boat--;
 					}
 				}
 			} // end while (num_child_Oahu >= 2 && boat_is_on_oahu)
@@ -213,13 +216,13 @@ public class Boat {
 			// this condition will never be reached if anyone else is on Oahu
 			// ignore if boat is on Molokai, since that means we are as well
 			while (num_child_Oahu == 1 && boat_is_on_oahu) {
-				children_on_boat++;
+				num_child_boat++;
 
 				bg.ChildRowToMolokai();
 				boat_is_on_oahu = true;
 				num_child_Oahu--;
 
-				children_on_boat--;
+				num_child_boat--;
 
 				not_done = false;
 				return;
