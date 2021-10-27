@@ -31,6 +31,7 @@ public class Communicator {
 
 		while (words) {
 			canSpeak.sleep();
+			canSpeak.wake();
 		}
 
 		this.word = word;
@@ -55,6 +56,7 @@ public class Communicator {
 
 		while (!words) {
 			canListen.sleep();
+			canListen.wake();
 		}
 
 		int message = word;
