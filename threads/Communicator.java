@@ -42,7 +42,7 @@ public class Communicator {
 		words = true;
 
 		// Wake any waiting listeners
-		canListen.wake();
+		//canListen.wake(); //adding the listen wake in here.
 		// Go to sleep to ensure we are partnered before we return
 		canSpeak.sleep();
 
@@ -76,7 +76,8 @@ public class Communicator {
 		// Notify the speaker it is partnered
 		// This message may be intercepted by another waiting speaker
 		// That's okay -- the speaker will pass it along until it reaches the right one
-		canSpeak.wake();
+		
+		//canSpeak.wake(); // get rid of one extra speaker wake
 
 		// We don't have to sleep here -- if we have a word we have a partner
 
