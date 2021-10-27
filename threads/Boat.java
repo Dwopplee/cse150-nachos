@@ -34,8 +34,8 @@ public class Boat {
 		// System.out.println("\n ***Testing Boats with only 2 children, 1 adult***");
 		// begin(1, 2, b);
 
-		System.out.println("\n ***Testing Boats with 3 children, 3 adult***");
-		begin(1, 3, b);
+		// System.out.println("\n ***Testing Boats with 3 children, 3 adult***");
+		begin(6, 2, b);
 
 	}
 
@@ -155,7 +155,7 @@ public class Boat {
 			// if there is another child on Oahu
 			// then we should go with them to Molokai
 			// ignore if boat is on Molokai, since that means we are as well
-			while (num_child_oahu >= 2 && boat_is_on_oahu) {
+			if (num_child_oahu >= 2 && boat_is_on_oahu) {
 
 				// if we are the first on the boat, get a rower to take us
 				if (num_child_boat == 0) {
@@ -169,6 +169,7 @@ public class Boat {
 
 					// rower will wake us on the island
 					// we can go back to sleep
+					boat_child.wake();
 					molokai_child.sleep();
 
 				}
@@ -185,6 +186,7 @@ public class Boat {
 					// that should wake them up
 					num_child_boat--;
 					boat_child.wake();
+					boat_child.sleep();
 
 					// if there is no one on Oahu, we're done
 					if (num_child_oahu + num_adult_oahu == 0) {
@@ -206,7 +208,7 @@ public class Boat {
 			// then we should wake one, then go to sleep
 			// this condition will never be reached if there is another child
 			// ignore if boat is on Molokai, since that means we are as well
-			while (num_adult_oahu > 0 && boat_is_on_oahu) {
+			else if (num_adult_oahu > 0 && boat_is_on_oahu) {
 				oahu_adult.wake();
 				oahu_child.sleep();
 			} // end while (num_adult_oahu > 0 && boat_is_on_oahu)
@@ -215,7 +217,7 @@ public class Boat {
 			// then we should row to Molokai, and we're done
 			// this condition will never be reached if anyone else is on Oahu
 			// ignore if boat is on Molokai, since that means we are as well
-			while (num_child_oahu == 1 && boat_is_on_oahu) {
+			/*while (num_child_oahu == 1 && boat_is_on_oahu) {
 				num_child_boat++;
 
 				bg.ChildRowToMolokai();
@@ -226,7 +228,7 @@ public class Boat {
 
 				not_done = false;
 				return;
-			}
+			}*/
 
 		} // end while (not_done)
 
