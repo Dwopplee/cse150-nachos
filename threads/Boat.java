@@ -9,7 +9,7 @@ public class Boat {
 
 	// Track whether the boat is on Oahu
 	static boolean boat_is_on_oahu;
-	
+
 	// Track quantities of people in places
 	static int num_child_boat;
 	static int num_adult_oahu;
@@ -26,17 +26,6 @@ public class Boat {
 	static Condition boat_child;
 
 	public static void selfTest() {
-		BoatGrader b = new BoatGrader();
-
-		// System.out.println("\n ***Testing Boats with only 2 children***");
-		// begin(0, 2, b);
-
-		// System.out.println("\n ***Testing Boats with only 2 children, 1 adult***");
-		// begin(1, 2, b);
-
-		// System.out.println("\n ***Testing Boats with 3 children, 3 adult***");
-		begin(6, 2, b);
-
 	}
 
 	public static void begin(int adults, int children, BoatGrader b) {
@@ -142,7 +131,7 @@ public class Boat {
 
 			// if the boat is not on Oahu and we aren't done
 			// then we need to return it
-			while (!boat_is_on_oahu) {
+			if (!boat_is_on_oahu) {
 				num_child_boat++;
 
 				bg.ChildRowToOahu();
@@ -150,12 +139,12 @@ public class Boat {
 				num_child_oahu++;
 
 				num_child_boat--;
-			} // end while (!boat_is_on_oahu)
+			} // end if (!boat_is_on_oahu)
 
 			// if there is another child on Oahu
 			// then we should go with them to Molokai
 			// ignore if boat is on Molokai, since that means we are as well
-			if (num_child_oahu >= 2 && boat_is_on_oahu) {
+			else if (num_child_oahu >= 2) {
 
 				// if we are the first on the boat, get a rower to take us
 				if (num_child_boat == 0) {
@@ -202,33 +191,16 @@ public class Boat {
 						num_child_boat--;
 					}
 				}
-			} // end while (num_child_oahu >= 2 && boat_is_on_oahu)
+			} // end if (num_child_oahu >= 2)
 
 			// if we're on Oahu and there is an adult to wake
 			// then we should wake one, then go to sleep
 			// this condition will never be reached if there is another child
 			// ignore if boat is on Molokai, since that means we are as well
-			else if (num_adult_oahu > 0 && boat_is_on_oahu) {
+			else if (num_adult_oahu > 0) {
 				oahu_adult.wake();
 				oahu_child.sleep();
-			} // end while (num_adult_oahu > 0 && boat_is_on_oahu)
-
-			// if we're the only one on Oahu
-			// then we should row to Molokai, and we're done
-			// this condition will never be reached if anyone else is on Oahu
-			// ignore if boat is on Molokai, since that means we are as well
-			/*while (num_child_oahu == 1 && boat_is_on_oahu) {
-				num_child_boat++;
-
-				bg.ChildRowToMolokai();
-				boat_is_on_oahu = true;
-				num_child_oahu--;
-
-				num_child_boat--;
-
-				not_done = false;
-				return;
-			}*/
+			} // end if (num_adult_oahu > 0)
 
 		} // end while (not_done)
 

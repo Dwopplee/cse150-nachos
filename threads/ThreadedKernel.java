@@ -46,7 +46,6 @@ public class ThreadedKernel extends Kernel {
 	 * here.
 	 */
 	public void selfTest() {
-		Boat.selfTest();
 	}
 
 	/**
