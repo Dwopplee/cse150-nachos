@@ -27,6 +27,13 @@ public class UserProcess {
 		pageTable = new TranslationEntry[numPhysPages];
 		for (int i = 0; i < numPhysPages; i++)
 			pageTable[i] = new TranslationEntry(i, i, true, false, false, false);
+
+ 		myFileSlots = new OpenFile[16]; 
+		
+ 		// File descriptor 0 refers to keyboard input (UNIX stdin) 
+ 		myFileSlots[0] = UserKernel.console.openForReading(); 
+ 		// File descriptor 1 refers to display output (UNIX stdout) 
+ 		myFileSlots[1] = UserKernel.console.openForWriting();
 	}
 
 	/**
@@ -447,6 +454,9 @@ public class UserProcess {
 
 	/** The number of pages in the program's stack. */
 	protected final int stackPages = 8;
+
+	/** The array of all our opened files. */
+	protected OpenFile[] myFileSlots;
 
 	private int initialPC, initialSP;
 	private int argc, argv;
