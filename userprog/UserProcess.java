@@ -346,6 +346,10 @@ public class UserProcess {
 	private int handleCreate(int nameAddr) {
 		String name = readVirtualMemoryString(nameAddr, maxFileNameLength);
 
+		if (name == null) {
+			return -1;
+		}
+
 		// TODO: deal with the case that the file is already opened?
 
 		OpenFile f = ThreadedKernel.fileSystem.open(name, true);
@@ -356,7 +360,36 @@ public class UserProcess {
 
 		// TODO: put the file in the array if there's space
 		// TODO: should probably make 16 a class variable
-		for (i = 0; i < 16; i++) {
+		for (int i = 0; i < 16; i++) {
+			// TODO: do we have to worry about being interrupted?
+			// i hope not
+			if (myFileSlots[i] == null) {
+				myFileSlots[i] = f;
+				return i;
+			}
+		}
+
+		return -1;
+	}
+
+	private int handleOpen(int nameAddr) {
+		String name = readVirtualMemoryString(nameAddr, maxFileNameLength);
+
+		if (name == null) {
+			return -1;
+		}
+
+		// TODO: deal with the case that the file is already opened?
+
+		OpenFile f = ThreadedKernel.fileSystem.open(name, false);		
+
+		if (f == null) {
+			return -1;
+		}
+
+		// TODO: put the file in the array if there's space
+		// TODO: should probably make 16 a class variable
+		for (int i = 0; i < 16; i++) {
 			// TODO: do we have to worry about being interrupted?
 			// i hope not
 			if (myFileSlots[i] == null) {
@@ -377,8 +410,20 @@ public class UserProcess {
 		return 0;
 	}
 
-	private int handleUnlink(int fd) {
-		
+	private int handleUnlink(int nameAddr) {
+		String name = readVirtualMemoryString(nameAddr, maxFileNameLength);
+
+		if (name == null) {
+			return -1;
+		}
+
+		boolean success = ThreadedKernel.fileSystem.remove(name);
+
+		if (success) {
+			return 0;
+		} else {
+			return -1;
+		}
 	}
 
 	private static final int syscallHalt = 0, syscallExit = 1, syscallExec = 2, syscallJoin = 3, syscallCreate = 4,
@@ -449,16 +494,19 @@ public class UserProcess {
 		switch (syscall) {
 		case syscallHalt:
 			return handleHalt();
-			break;
 		
 		case syscallCreate:
 			return handleCreate(a0);
-			break;
+
+		case syscallOpen:
+			return handleOpen(a0);
 
 		case syscallClose:
 			return handleClose(a0);
-			break;
 
+		case syscallUnlink:
+			return handleUnlink(a0);
+			
 		default:
 			Lib.debug(dbgProcess, "Unknown syscall " + syscall);
 			Lib.assertNotReached("Unknown system call!");
@@ -512,5 +560,5 @@ public class UserProcess {
 	private static final char dbgProcess = 'a';
 
 	/** I think we define this? */
-	private static int maxFileNameLength = 64;
+	private static int maxFileNameLength = 256;
 }
