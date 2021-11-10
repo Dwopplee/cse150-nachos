@@ -343,6 +343,44 @@ public class UserProcess {
 		return 0;
 	}
 
+	private int handleCreate(int nameAddr) {
+		String name = readVirtualMemoryString(nameAddr, maxFileNameLength);
+
+		// TODO: deal with the case that the file is already opened?
+
+		OpenFile f = ThreadedKernel.fileSystem.open(name, true);
+
+		if (f == null) {
+			return -1;
+		}
+
+		// TODO: put the file in the array if there's space
+		// TODO: should probably make 16 a class variable
+		for (i = 0; i < 16; i++) {
+			// TODO: do we have to worry about being interrupted?
+			// i hope not
+			if (myFileSlots[i] == null) {
+				myFileSlots[i] = f;
+				return i;
+			}
+		}
+
+		return -1;
+	}
+
+	private int handleClose(int fd) {
+		if (myFileSlots[fd] == null) {
+			return -1;
+		}
+
+		myFileSlots[fd].close();
+		return 0;
+	}
+
+	private int handleUnlink(int fd) {
+		
+	}
+
 	private static final int syscallHalt = 0, syscallExit = 1, syscallExec = 2, syscallJoin = 3, syscallCreate = 4,
 			syscallOpen = 5, syscallRead = 6, syscallWrite = 7, syscallClose = 8, syscallUnlink = 9;
 
@@ -411,6 +449,15 @@ public class UserProcess {
 		switch (syscall) {
 		case syscallHalt:
 			return handleHalt();
+			break;
+		
+		case syscallCreate:
+			return handleCreate(a0);
+			break;
+
+		case syscallClose:
+			return handleClose(a0);
+			break;
 
 		default:
 			Lib.debug(dbgProcess, "Unknown syscall " + syscall);
@@ -463,4 +510,7 @@ public class UserProcess {
 
 	private static final int pageSize = Processor.pageSize;
 	private static final char dbgProcess = 'a';
+
+	/** I think we define this? */
+	private static int maxFileNameLength = 64;
 }
