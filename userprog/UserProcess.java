@@ -401,6 +401,34 @@ public class UserProcess {
 		return -1;
 	}
 
+	private int handleRead(int fd, int bufferAddr, int size) {
+		byte[] data = new byte[size];
+
+		int success = myFileSlots[fd].read(data, 0, size);
+
+		if (success < 0) {
+			return -1;
+		}
+
+		success = writeVirtualMemory(bufferAddr, data, 0, success);
+
+		return success;
+	}
+
+	private int handleWrite(int fd, int bufferAddr, int size) {
+		byte[] data = new byte[size];
+
+		int success = readVirtualMemory(bufferAddr, data);
+
+		if (success < 0) {
+			return -1;
+		}
+
+		success = myFileSlots[fd].write(data, 0, success);
+
+		return success;
+	}
+
 	private int handleClose(int fd) {
 		if (myFileSlots[fd] == null) {
 			return -1;
@@ -501,13 +529,20 @@ public class UserProcess {
 		case syscallOpen:
 			return handleOpen(a0);
 
+		case syscallRead:
+			return handleRead(a0, a1, a2);
+
+		case syscallWrite:
+			return handleWrite(a0, a1, a2);
+
 		case syscallClose:
 			return handleClose(a0);
 
 		case syscallUnlink:
 			return handleUnlink(a0);
-			
+
 		default:
+			// TODO: do we have to handle this case in some other way?
 			Lib.debug(dbgProcess, "Unknown syscall " + syscall);
 			Lib.assertNotReached("Unknown system call!");
 		}
