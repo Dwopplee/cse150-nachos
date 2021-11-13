@@ -28,12 +28,12 @@ public class UserProcess {
 		for (int i = 0; i < numPhysPages; i++)
 			pageTable[i] = new TranslationEntry(i, i, true, false, false, false);
 
-		myFileSlots = new OpenFile[16];
+		fileSlots = new OpenFile[maxFileSlots];
 
 		// File descriptor 0 refers to keyboard input (UNIX stdin)
-		myFileSlots[0] = UserKernel.console.openForReading();
+		fileSlots[0] = UserKernel.console.openForReading();
 		// File descriptor 1 refers to display output (UNIX stdout)
-		myFileSlots[1] = UserKernel.console.openForWriting();
+		fileSlots[1] = UserKernel.console.openForWriting();
 	}
 
 	/**
@@ -344,66 +344,72 @@ public class UserProcess {
 	}
 
 	private int handleCreate(int nameAddr) {
+		// Get name stored at virtual address
 		String name = readVirtualMemoryString(nameAddr, maxFileNameLength);
 
+		// If something goes wrong above, name should be null
 		if (name == null) {
 			return -1;
 		}
 
 		// TODO: deal with the case that the file is already opened?
+		// What is the correct behavior in this case?
 
+		// Open file with specified name. If file doesn't exist, make it
 		OpenFile f = ThreadedKernel.fileSystem.open(name, true);
 
+		// If something does wrong above, file should be null
 		if (f == null) {
 			return -1;
 		}
 
-		// TODO: put the file in the array if there's space
-		// TODO: should probably make 16 a class variable
-		for (int i = 0; i < 16; i++) {
-			// TODO: do we have to worry about being interrupted?
-			// i hope not
-			if (myFileSlots[i] == null) {
-				myFileSlots[i] = f;
+		// Scan through array of files for open slot to put file into
+		for (int i = 0; i < maxFileSlots; i++) {
+			if (fileSlots[i] == null) {
+				fileSlots[i] = f;
 				return i;
 			}
 		}
 
+		// Return error if slot cannot be found
 		return -1;
 	}
 
 	private int handleOpen(int nameAddr) {
+		// Get name stored at virtual address
 		String name = readVirtualMemoryString(nameAddr, maxFileNameLength);
 
+		// If something goes wrong above, name should be null
 		if (name == null) {
 			return -1;
 		}
 
 		// TODO: deal with the case that the file is already opened?
+		// What is the correct behavior in this case?
 
+		// Open file with specified name. If file doesn't exist, make it
 		OpenFile f = ThreadedKernel.fileSystem.open(name, false);
 
+		// If something does wrong above, file should be null
 		if (f == null) {
 			return -1;
 		}
 
-		// TODO: put the file in the array if there's space
-		// TODO: should probably make 16 a class variable
-		for (int i = 0; i < 16; i++) {
-			// TODO: do we have to worry about being interrupted?
-			// i hope not
-			if (myFileSlots[i] == null) {
-				myFileSlots[i] = f;
+		// Scan through array of files for open slot to put file into
+		for (int i = 0; i < maxFileSlots; i++) {
+			if (fileSlots[i] == null) {
+				fileSlots[i] = f;
 				return i;
 			}
 		}
 
+		// Return error if slot cannot be found
 		return -1;
 	}
 
 	private int handleRead(int fd, int bufferAddr, int size) {
 		// Make sure the file descriptor refers to an open file
-		if (fd > 15 || fd < 0 || myFileSlots[fd] == null) {
+		if (fd > 15 || fd < 0 || fileSlots[fd] == null) {
 			return -1;
 		}
 
@@ -422,7 +428,7 @@ public class UserProcess {
 			int length = Math.min(pageSize, size);
 
 			// Read from file into buffer and store amount read in tmp
-			int tmp = myFileSlots[fd].read(success, data, 0, length);
+			int tmp = fileSlots[fd].read(success, data, 0, length);
 
 			// tmp will be -1 if there is an error above
 			if (tmp < 0) {
@@ -450,7 +456,7 @@ public class UserProcess {
 
 	private int handleWrite(int fd, int bufferAddr, int size) {
 		// Make sure the file descriptor refers to an open file
-		if (fd > 15 || fd < 0 || myFileSlots[fd] == null) {
+		if (fd > 15 || fd < 0 || fileSlots[fd] == null) {
 			return -1;
 		}
 
@@ -474,7 +480,7 @@ public class UserProcess {
 			int tmp = readVirtualMemory(bufferAddr + success, data, 0, length);
 
 			// Write into file from buffer and store amount written in tmp
-			tmp = myFileSlots[fd].write(success, data, 0, tmp);
+			tmp = fileSlots[fd].write(success, data, 0, tmp);
 
 			// tmp will be -1 if there is an error above
 			if (tmp < 0) {
@@ -497,23 +503,31 @@ public class UserProcess {
 	}
 
 	private int handleClose(int fd) {
-		if (myFileSlots[fd] == null) {
+		// Return error if file is not in specified slot
+		if (fileSlots[fd] == null) {
 			return -1;
 		}
 
-		myFileSlots[fd].close();
+		// Close file and return without error otherwise
+		fileSlots[fd].close();
 		return 0;
 	}
 
 	private int handleUnlink(int nameAddr) {
+		// Get name stored at virtual address
 		String name = readVirtualMemoryString(nameAddr, maxFileNameLength);
 
+		// If something goes wrong above, name should be null
 		if (name == null) {
 			return -1;
 		}
 
+		// TODO: handle case when file is open?
+
+		// Remove file with specified name
 		boolean success = ThreadedKernel.fileSystem.remove(name);
 
+		// Return error if failure or success otherwise
 		if (success) {
 			return 0;
 		} else {
@@ -610,6 +624,8 @@ public class UserProcess {
 
 		default:
 			// TODO: do we have to handle this case in some other way?
+			// If same to assume this won't happen, then we don't need to handle this
+			// Otherwise, should probably just return -1
 			Lib.debug(dbgProcess, "Unknown syscall " + syscall);
 			Lib.assertNotReached("Unknown system call!");
 		}
@@ -653,7 +669,7 @@ public class UserProcess {
 	protected final int stackPages = 8;
 
 	/** The array of all our opened files. */
-	protected OpenFile[] myFileSlots;
+	protected OpenFile[] fileSlots;
 
 	private int initialPC, initialSP;
 	private int argc, argv;
@@ -662,5 +678,6 @@ public class UserProcess {
 	private static final char dbgProcess = 'a';
 
 	/** Max length of file names to be processed */
-	private static int maxFileNameLength = 256;
+	private static final int maxFileNameLength = 256;
+	private static final int maxFileSlots = 16;
 }
