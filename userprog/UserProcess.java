@@ -28,12 +28,12 @@ public class UserProcess {
 		for (int i = 0; i < numPhysPages; i++)
 			pageTable[i] = new TranslationEntry(i, i, true, false, false, false);
 
- 		myFileSlots = new OpenFile[16]; 
-		
- 		// File descriptor 0 refers to keyboard input (UNIX stdin) 
- 		myFileSlots[0] = UserKernel.console.openForReading(); 
- 		// File descriptor 1 refers to display output (UNIX stdout) 
- 		myFileSlots[1] = UserKernel.console.openForWriting();
+		myFileSlots = new OpenFile[16];
+
+		// File descriptor 0 refers to keyboard input (UNIX stdin)
+		myFileSlots[0] = UserKernel.console.openForReading();
+		// File descriptor 1 refers to display output (UNIX stdout)
+		myFileSlots[1] = UserKernel.console.openForWriting();
 	}
 
 	/**
@@ -381,7 +381,7 @@ public class UserProcess {
 
 		// TODO: deal with the case that the file is already opened?
 
-		OpenFile f = ThreadedKernel.fileSystem.open(name, false);		
+		OpenFile f = ThreadedKernel.fileSystem.open(name, false);
 
 		if (f == null) {
 			return -1;
@@ -402,30 +402,97 @@ public class UserProcess {
 	}
 
 	private int handleRead(int fd, int bufferAddr, int size) {
-		byte[] data = new byte[size];
-
-		int success = myFileSlots[fd].read(data, 0, size);
-
-		if (success < 0) {
+		// Make sure the file descriptor refers to an open file
+		if (fd > 15 || fd < 0 || myFileSlots[fd] == null) {
 			return -1;
 		}
 
-		success = writeVirtualMemory(bufferAddr, data, 0, success);
+		// TODO: handle weird bufferAddr?
 
+		// Create a buffer with max size pageSize
+		byte[] data = new byte[Math.min(pageSize, size)];
+
+		// success will represent the number of successfully transferred bytes
+		int success;
+
+		// size represents the number of bytes remaining to transfer
+		// We transfer bytes one page at a time
+		for (success = 0; size > 0; size -= pageSize) {
+			// If size is less than a page, do it all. otherwise, just one page
+			int length = Math.min(pageSize, size);
+
+			// Read from file into buffer and store amount read in tmp
+			int tmp = myFileSlots[fd].read(success, data, 0, length);
+
+			// tmp will be -1 if there is an error above
+			if (tmp < 0) {
+				return -1;
+			}
+
+			// Write into virtual memory from buffer and store amount written in tmp
+			// Assumes an offset can be added to a virtual address without error
+			// TODO: check that above line is okay
+			tmp = writeVirtualMemory(bufferAddr + success, data, 0, tmp);
+
+			// tmp now represents new bytes successfully transferred. add to total
+			// tmp wil never be negative here, so it's safe to add
+			success += tmp;
+
+			// If tmp is less than we expect, something went wrong, and we should stop
+			if (tmp < length) {
+				return success;
+			}
+		}
+
+		// Return total bytes read
 		return success;
 	}
 
 	private int handleWrite(int fd, int bufferAddr, int size) {
-		byte[] data = new byte[size];
-
-		int success = readVirtualMemory(bufferAddr, data);
-
-		if (success < 0) {
+		// Make sure the file descriptor refers to an open file
+		if (fd > 15 || fd < 0 || myFileSlots[fd] == null) {
 			return -1;
 		}
 
-		success = myFileSlots[fd].write(data, 0, success);
+		// TODO: handle weird bufferAddr?
 
+		// Create a buffer with max size pageSize
+		byte[] data = new byte[Math.min(pageSize, size)];
+
+		// success will represent the number of successfully transferred bytes
+		int success;
+		
+		// size represents the number of bytes remaining to transfer
+		// We transfer bytes one page at a time
+		for (success = 0; size > 0; size -= pageSize) {
+			// If size is less than a page, do it all. otherwise, just one page
+			int length = Math.min(pageSize, size);
+
+			// Read from virtual memory into buffer and store amount read in tmp
+			// Assumes an offset can be added to a virtual address without error
+			// TODO: check that above line is okay
+			int tmp = readVirtualMemory(bufferAddr + success, data, 0, length);
+
+			// Write into file from buffer and store amount written in tmp
+			tmp = myFileSlots[fd].write(success, data, 0, tmp);
+
+			// tmp will be -1 if there is an error above
+			if (tmp < 0) {
+				return -1;
+			}
+
+			// tmp now represents new bytes successfully transferred. add to total
+			// tmp wil never be negative here, so it's safe to add
+			success += tmp;
+
+			// If tmp is less than we expect, something went wrong, and we should stop
+			// TODO: make sure this is the correct thing to return
+			if (tmp < length) {
+				return success;
+			}
+		}
+		
+		// Return total bytes written
 		return success;
 	}
 
@@ -522,7 +589,7 @@ public class UserProcess {
 		switch (syscall) {
 		case syscallHalt:
 			return handleHalt();
-		
+
 		case syscallCreate:
 			return handleCreate(a0);
 
@@ -594,6 +661,6 @@ public class UserProcess {
 	private static final int pageSize = Processor.pageSize;
 	private static final char dbgProcess = 'a';
 
-	/** I think we define this? */
+	/** Max length of file names to be processed */
 	private static int maxFileNameLength = 256;
 }
