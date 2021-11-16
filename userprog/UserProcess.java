@@ -387,7 +387,7 @@ public class UserProcess {
 		// TODO: deal with the case that the file is already opened?
 		// What is the correct behavior in this case?
 
-		// Open file with specified name. If file doesn't exist, make it
+		// Open file with specified name. If file doesn't exist, don't make it
 		OpenFile f = ThreadedKernel.fileSystem.open(name, false);
 
 		// If something does wrong above, file should be null
@@ -467,7 +467,7 @@ public class UserProcess {
 
 		// success will represent the number of successfully transferred bytes
 		int success;
-		
+
 		// size represents the number of bytes remaining to transfer
 		// We transfer bytes one page at a time
 		for (success = 0; size > 0; size -= pageSize) {
@@ -497,7 +497,7 @@ public class UserProcess {
 				return success;
 			}
 		}
-		
+
 		// Return total bytes written
 		return success;
 	}
