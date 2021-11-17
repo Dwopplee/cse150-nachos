@@ -504,7 +504,7 @@ public class UserProcess {
 
 	private int handleClose(int fd) {
 		// Return error if file is not in specified slot
-		if (fileSlots[fd] == null) {
+		if (fd < 0 || fd > 15 || fileSlots[fd] == null) {
 			return -1;
 		}
 
