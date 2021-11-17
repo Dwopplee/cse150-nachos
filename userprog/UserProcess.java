@@ -510,6 +510,11 @@ public class UserProcess {
 
 		// Close file and return without error otherwise
 		fileSlots[fd].close();
+
+		// I assume close would set the slot to null
+		//Correction: it does not
+		fileSlots[fd] = null;
+
 		return 0;
 	}
 
