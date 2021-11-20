@@ -428,7 +428,7 @@ public class UserProcess {
 			int length = Math.min(pageSize, size);
 
 			// Read from file into buffer and store amount read in tmp
-			int tmp = fileSlots[fd].read(success, data, 0, length);
+			int tmp = fileSlots[fd].read(data, 0, length);
 
 			// tmp will be -1 if there is an error above
 			if (tmp < 0) {
@@ -480,7 +480,7 @@ public class UserProcess {
 			int tmp = readVirtualMemory(bufferAddr + success, data, 0, length);
 
 			// Write into file from buffer and store amount written in tmp
-			tmp = fileSlots[fd].write(success, data, 0, tmp);
+			tmp = fileSlots[fd].write(data, 0, tmp);
 
 			// tmp will be -1 if there is an error above
 			if (tmp < 0) {
@@ -510,9 +510,6 @@ public class UserProcess {
 
 		// Close file and return without error otherwise
 		fileSlots[fd].close();
-
-		// I assume close would set the slot to null
-		//Correction: it does not
 		fileSlots[fd] = null;
 
 		return 0;
