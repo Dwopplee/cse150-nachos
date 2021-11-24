@@ -352,9 +352,6 @@ public class UserProcess {
 			return -1;
 		}
 
-		// TODO: deal with the case that the file is already opened?
-		// What is the correct behavior in this case?
-
 		// Open file with specified name. If file doesn't exist, make it
 		OpenFile f = ThreadedKernel.fileSystem.open(name, true);
 
@@ -384,9 +381,6 @@ public class UserProcess {
 			return -1;
 		}
 
-		// TODO: deal with the case that the file is already opened?
-		// What is the correct behavior in this case?
-
 		// Open file with specified name. If file doesn't exist, don't make it
 		OpenFile f = ThreadedKernel.fileSystem.open(name, false);
 
@@ -413,7 +407,10 @@ public class UserProcess {
 			return -1;
 		}
 
-		// TODO: handle weird bufferAddr?
+		// Make sure our memory and size values make sense
+		if (size < 0 || bufferAddr < 0) {
+			return -1;
+		}
 
 		// Create a buffer with max size pageSize
 		byte[] data = new byte[Math.min(pageSize, size)];
@@ -437,8 +434,8 @@ public class UserProcess {
 
 			// Write into virtual memory from buffer and store amount written in tmp
 			// Assumes an offset can be added to a virtual address without error
-			// TODO: check that above line is okay
-			tmp = writeVirtualMemory(bufferAddr + success, data, 0, tmp);
+			// Ignores any offset at TA suggestion
+			tmp = writeVirtualMemory(bufferAddr, data, 0, tmp);
 
 			// tmp now represents new bytes successfully transferred. add to total
 			// tmp wil never be negative here, so it's safe to add
@@ -460,7 +457,10 @@ public class UserProcess {
 			return -1;
 		}
 
-		// TODO: handle weird bufferAddr?
+		// Make sure our memory and size values make sense
+		if (size < 0 || bufferAddr < 0) {
+			return -1;
+		}
 
 		// Create a buffer with max size pageSize
 		byte[] data = new byte[Math.min(pageSize, size)];
@@ -475,9 +475,8 @@ public class UserProcess {
 			int length = Math.min(pageSize, size);
 
 			// Read from virtual memory into buffer and store amount read in tmp
-			// Assumes an offset can be added to a virtual address without error
-			// TODO: check that above line is okay
-			int tmp = readVirtualMemory(bufferAddr + success, data, 0, length);
+			// Ignores any offset at TA suggestion
+			int tmp = readVirtualMemory(bufferAddr, data, 0, length);
 
 			// Write into file from buffer and store amount written in tmp
 			tmp = fileSlots[fd].write(data, 0, tmp);
@@ -492,7 +491,6 @@ public class UserProcess {
 			success += tmp;
 
 			// If tmp is less than we expect, something went wrong, and we should stop
-			// TODO: make sure this is the correct thing to return
 			if (tmp < length) {
 				return success;
 			}
@@ -523,8 +521,6 @@ public class UserProcess {
 		if (name == null) {
 			return -1;
 		}
-
-		// TODO: handle case when file is open?
 
 		// Remove file with specified name
 		boolean success = ThreadedKernel.fileSystem.remove(name);
@@ -625,9 +621,6 @@ public class UserProcess {
 			return handleUnlink(a0);
 
 		default:
-			// TODO: do we have to handle this case in some other way?
-			// If same to assume this won't happen, then we don't need to handle this
-			// Otherwise, should probably just return -1
 			Lib.debug(dbgProcess, "Unknown syscall " + syscall);
 			Lib.assertNotReached("Unknown system call!");
 		}
